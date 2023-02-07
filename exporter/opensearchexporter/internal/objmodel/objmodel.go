@@ -37,7 +37,7 @@
 // The `.` is special to OpenSearch. In order to handle common prefixes and attributes
 // being a mix of key value pairs with dots and complex objects, we flatten the document first
 // before we deduplicate. Final dedotting is optional and only required when
-// Ingest Node is used. But either way, we try to present only well formed
+// Ingest Node is used. But either way, we try to present only well-formed
 // document to OpenSearch.
 
 package objmodel // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/objmodel"

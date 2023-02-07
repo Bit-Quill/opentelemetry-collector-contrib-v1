@@ -59,9 +59,6 @@ func TestLoadConfig(t *testing.T) {
 						"myheader": "test",
 					},
 				},
-				Discovery: DiscoverySettings{
-					OnStart: true,
-				},
 				Flush: FlushSettings{
 					Bytes: 10485760,
 				},
@@ -72,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:     1 * time.Minute,
 				},
 				Mapping: MappingsSettings{
-					Mode:  "ecs",
+					Mode:  "sso",
 					Dedup: true,
 					Dedot: true,
 				},
@@ -95,9 +92,6 @@ func TestLoadConfig(t *testing.T) {
 						"myheader": "test",
 					},
 				},
-				Discovery: DiscoverySettings{
-					OnStart: true,
-				},
 				Flush: FlushSettings{
 					Bytes: 10485760,
 				},
@@ -108,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:     1 * time.Minute,
 				},
 				Mapping: MappingsSettings{
-					Mode:  "ecs",
+					Mode:  "sso",
 					Dedup: true,
 					Dedot: true,
 				},

@@ -11,9 +11,6 @@ opensearch/trace:
   pipeline: mypipeline
   user: open
   password: search
-  api_key: AvFsEiPs==
-  discover:
-    on_start: true
   flush:
     bytes: 10485760
   retry:
@@ -29,9 +26,6 @@ opensearch/log:
   pipeline: mypipeline
   user: open
   password: search
-  api_key: AvFsEiPs==
-  discover:
-    on_start: true
   flush:
     bytes: 10485760
   retry:

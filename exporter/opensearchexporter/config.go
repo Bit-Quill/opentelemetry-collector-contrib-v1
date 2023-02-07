@@ -18,11 +18,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+)
+
+const (
+	defaultOpenSearchEnvName = "OPENSEARCH_URL"
 )
 
 // Config defines configuration for OpenSearch exporter.
@@ -42,15 +45,14 @@ type Config struct {
 	// This setting is required when traces pipelines used.
 	TracesIndex string `mapstructure:"traces_index"`
 
-	// Pipeline configures the ingest node pipeline name that should be used to process the
+	// Pipeline ingest node pipeline name that should be used to process the
 	// events.
 	Pipeline string `mapstructure:"pipeline"`
 
 	HTTPClientSettings `mapstructure:",squash"`
-	Discovery          DiscoverySettings `mapstructure:"discover"`
-	Retry              RetrySettings     `mapstructure:"retry"`
-	Flush              FlushSettings     `mapstructure:"flush"`
-	Mapping            MappingsSettings  `mapstructure:"mapping"`
+	Retry              RetrySettings    `mapstructure:"retry"`
+	Flush              FlushSettings    `mapstructure:"flush"`
+	Mapping            MappingsSettings `mapstructure:"mapping"`
 }
 
 type HTTPClientSettings struct {
@@ -79,25 +81,6 @@ type AuthenticationSettings struct {
 
 	// Password is used to configure HTTP Basic Authentication.
 	Password configopaque.String `mapstructure:"password"`
-}
-
-// DiscoverySettings defines OpenSearch node discovery related settings.
-// The exporter will check OpenSearch regularly for available nodes
-// and updates the list of hosts if discovery is enabled. Newly discovered
-// nodes will automatically be used for load balancing.
-//
-// DiscoverySettings should not be enabled when operating OpenSearch behind a proxy
-// or load balancer.
-//
-// https://www.elastic.co/blog/elasticsearch-sniffing-best-practices-what-when-why-how
-type DiscoverySettings struct {
-	// OnStart, if set, instructs the exporter to look for available OpenSearch
-	// nodes the first time the exporter connects to the cluster.
-	OnStart bool `mapstructure:"on_start"`
-
-	// Interval instructs the exporter to renew the list of OpenSearch URLs
-	// with the given interval. URLs will not be updated if Interval is <=0.
-	Interval time.Duration `mapstructure:"interval"`
 }
 
 // FlushSettings  defines settings for configuring the write buffer flushing
@@ -131,59 +114,26 @@ type MappingsSettings struct {
 	// Mode configures the field mappings.
 	Mode string `mapstructure:"mode"`
 
-	// Additional field mappings.
-	Fields map[string]string `mapstructure:"fields"`
-
-	// File to read additional fields mappings from.
-	File string `mapstructure:"file"`
-
 	// Try to find and remove duplicate fields
 	Dedup bool `mapstructure:"dedup"`
 
 	Dedot bool `mapstructure:"dedot"`
 }
 
-type MappingMode int
-
-// Enum values for MappingMode.
-const (
-	MappingNone MappingMode = iota
-	MappingECS
-)
-
 var (
-	errConfigNoEndpoint    = errors.New("endpoints or cloudid must be specified")
+	errConfigNoEndpoint    = errors.New("endpoints must be specified")
 	errConfigEmptyEndpoint = errors.New("endpoints must not include empty entries")
 )
 
-func (m MappingMode) String() string {
-	switch m {
-	case MappingNone:
-		return ""
-	case MappingECS:
-		return "ecs"
-	default:
-		return ""
+func isValidMapping(candidate string) bool {
+	switch candidate {
+	case "none":
+	case "no":
+	case "sso":
+		return true
 	}
+	return false
 }
-
-var mappingModes = func() map[string]MappingMode {
-	table := map[string]MappingMode{}
-	for _, m := range []MappingMode{
-		MappingNone,
-		MappingECS,
-	} {
-		table[strings.ToLower(m.String())] = m
-	}
-
-	// config aliases
-	table["no"] = MappingNone
-	table["none"] = MappingNone
-
-	return table
-}()
-
-const defaultOpenSearchEnvName = "OPENSEARCH_URL"
 
 // Validate validates the opensearch server configuration.
 func (cfg *Config) Validate() error {
@@ -199,7 +149,7 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if _, ok := mappingModes[cfg.Mapping.Mode]; !ok {
+	if !isValidMapping(cfg.Mapping.Mode) {
 		return fmt.Errorf("unknown mapping mode %v", cfg.Mapping.Mode)
 	}
 

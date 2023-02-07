@@ -113,10 +113,6 @@ func newOpenSearchClient(logger *zap.Logger, config *Config) (*osClientCurrent, 
 		MaxRetries:    maxRetries,
 		RetryBackoff:  createBackoffFunction(&config.Retry),
 
-		// configure sniffing
-		DiscoverNodesOnStart:  config.Discovery.OnStart,
-		DiscoverNodesInterval: config.Discovery.Interval,
-
 		// configure internal metrics reporting and logging
 		EnableMetrics:     false, // TODO
 		EnableDebugLogger: false, // TODO

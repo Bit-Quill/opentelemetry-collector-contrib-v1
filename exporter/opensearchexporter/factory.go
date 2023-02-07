@@ -57,7 +57,7 @@ func createDefaultConfig() component.Config {
 			MaxInterval:     1 * time.Minute,
 		},
 		Mapping: MappingsSettings{
-			Mode:  "ecs",
+			Mode:  "sso",
 			Dedup: true,
 			Dedot: true,
 		},
@@ -72,17 +72,17 @@ func createLogsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	exporter, err := newLogsExporter(set.Logger, cfg.(*Config))
+	logsExporter, err := newLogsExporter(set.Logger, cfg.(*Config))
 	if err != nil {
-		return nil, fmt.Errorf("cannot configure OpenSearch logs exporter: %w", err)
+		return nil, fmt.Errorf("cannot configure OpenSearch logs logsExporter: %w", err)
 	}
 
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,
-		exporter.pushLogsData,
-		exporterhelper.WithShutdown(exporter.Shutdown),
+		logsExporter.pushLogsData,
+		exporterhelper.WithShutdown(logsExporter.Shutdown),
 	)
 }
 
@@ -90,10 +90,10 @@ func createTracesExporter(ctx context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config) (exporter.Traces, error) {
 
-	exporter, err := newTracesExporter(set.Logger, cfg.(*Config))
+	tracesExporter, err := newTracesExporter(set.Logger, cfg.(*Config))
 	if err != nil {
-		return nil, fmt.Errorf("cannot configure OpenSearch traces exporter: %w", err)
+		return nil, fmt.Errorf("cannot configure OpenSearch traces tracesExporter: %w", err)
 	}
-	return exporterhelper.NewTracesExporter(ctx, set, cfg, exporter.pushTraceData,
-		exporterhelper.WithShutdown(exporter.Shutdown))
+	return exporterhelper.NewTracesExporter(ctx, set, cfg, tracesExporter.pushTraceData,
+		exporterhelper.WithShutdown(tracesExporter.Shutdown))
 }

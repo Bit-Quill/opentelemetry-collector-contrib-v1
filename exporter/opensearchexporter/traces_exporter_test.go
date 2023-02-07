@@ -80,9 +80,10 @@ func TestTracesExporter_New(t *testing.T) {
 			}
 
 			oldEnv := make(map[string]string, len(env))
+
 			defer func() {
 				for k, v := range oldEnv {
-					os.Setenv(k, v)
+					t.Setenv(k, v)
 				}
 			}()
 
@@ -90,7 +91,7 @@ func TestTracesExporter_New(t *testing.T) {
 				oldEnv[k] = os.Getenv(k)
 			}
 			for k, v := range env {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			exporter, err := newTracesExporter(zap.NewNop(), test.config)
@@ -105,7 +106,7 @@ func TestTracesExporter_New(t *testing.T) {
 	}
 }
 
-func TestExporter_PushTraceRecord(t *testing.T) {
+func TestExporter_PushDocument(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14759")
 	}
