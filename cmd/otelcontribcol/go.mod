@@ -33,7 +33,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.70.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.70.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.70.0
@@ -685,8 +685,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/span
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy => ../../extension/awsproxy
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter => ../../exporter/opensearchexporter
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../../pkg/translator/zipkin
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver => ../../receiver/dotnetdiagnosticsreceiver
@@ -940,6 +938,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/filee
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter => ../../exporter/opencensusexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter => ../../exporter/opensearchexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => ../../internal/metadataproviders
 
