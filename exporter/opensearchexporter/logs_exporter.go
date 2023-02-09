@@ -56,13 +56,9 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*opensearchLogsExporter, 
 		return nil, err
 	}
 
-	maxAttempts := 1
-	if cfg.Retry.Enabled {
-		maxAttempts = cfg.Retry.MaxRequests
-	}
+	maxAttempts := GetMaxAttempts(cfg)
 
-	// TODO: Apply encoding and field mapping settings.
-	model := &encodeModel{dedup: true, dedot: false}
+	model := NewEncodeModel(cfg)
 
 	indexStr := cfg.LogsIndex
 

@@ -31,15 +31,37 @@ type mappingModel interface {
 	encodeSpan(pcommon.Resource, ptrace.Span) ([]byte, error)
 }
 
-// encodeModel tries to keep the event as close to the original open telemetry semantics as is.
+// EncodeModel tries to keep the event as close to the original open telemetry semantics as is.
 // No fields will be mapped by default.
 //
-// Field deduplication and dedotting of attributes is supported by the encodeModel.
+// Field deduplication and dedotting of attributes is supported by the EncodeModel.
 //
 // See: https://github.com/open-telemetry/oteps/blob/master/text/logs/0097-log-data-model.md
-type encodeModel struct {
-	dedup bool
-	dedot bool
+type EncodeModel struct {
+	transform objmodel.DestinationSchemaTransform
+	dedup     bool
+	dedot     bool
+}
+
+func NewEncodeModel(cfg *Config) *EncodeModel {
+	var transform objmodel.DestinationSchemaTransform
+	if cfg.Mapping.Mode == "sso" {
+		transform = ssoSchemaTransform()
+	} else {
+		transform = otelSchemaTransform()
+	}
+	return &EncodeModel{
+		dedup:     cfg.Mapping.Dedup,
+		dedot:     cfg.Mapping.Dedot,
+		transform: transform,
+	}
+}
+
+func GetMaxAttempts(cfg *Config) int {
+	if cfg.Retry.Enabled {
+		return cfg.Retry.MaxRequests
+	}
+	return 1
 }
 
 const (
@@ -48,7 +70,17 @@ const (
 	attributeField = "attribute"
 )
 
-func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord) ([]byte, error) {
+func otelSchemaTransform() objmodel.DestinationSchemaTransform {
+	return objmodel.DestinationSchemaTransform{
+		TraceID: "traceId",
+	}
+}
+
+func ssoSchemaTransform() objmodel.DestinationSchemaTransform {
+	panic("implement me")
+}
+
+func (m *EncodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord) ([]byte, error) {
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", record.Timestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
 	document.AddTraceID("TraceId", record.TraceID())
@@ -71,7 +103,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 	return buf.Bytes(), err
 }
 
-func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span) ([]byte, error) {
+func (m *EncodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span) ([]byte, error) {
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", span.StartTimestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
 	document.AddTimestamp("EndTimestamp", span.EndTimestamp())
