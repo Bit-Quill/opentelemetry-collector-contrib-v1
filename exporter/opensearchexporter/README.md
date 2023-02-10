@@ -6,7 +6,7 @@
 | Supported pipeline types | traces      |
 | Distributions            | [contrib]   |
 
-This exporter supports sending OpenTelemetry logs to [OpenSearch](https://www.opensearch.org).
+This exporter supports sending OpenTelemetry signals to [OpenSearch](https://www.opensearch.org).
 
 ## Configuration options
 

@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright 2023, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,12 +35,14 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg.(*Config).Endpoints = []string{"https://opensearch.example.com:9200"}
 
 	tests := []struct {
-		id       component.ID
-		expected component.Config
+		id                   component.ID
+		expected             component.Config
+		configValidateAssert assert.ErrorAssertionFunc
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
-			expected: defaultCfg,
+			id:                   component.NewIDWithName(typeStr, ""),
+			expected:             defaultCfg,
+			configValidateAssert: assert.NoError,
 		},
 		{
 			id: component.NewIDWithName(typeStr, "trace"),
@@ -74,6 +76,7 @@ func TestLoadConfig(t *testing.T) {
 					Dedot: true,
 				},
 			},
+			configValidateAssert: assert.NoError,
 		},
 		{
 			id: component.NewIDWithName(typeStr, "log"),
@@ -107,6 +110,41 @@ func TestLoadConfig(t *testing.T) {
 					Dedot: true,
 				},
 			},
+			configValidateAssert: assert.NoError,
+		},
+		{
+			id: component.NewIDWithName(typeStr, "bad_mode"),
+			expected: &Config{
+				Endpoints:   []string{"http://localhost:9200"},
+				LogsIndex:   "my_log_index",
+				TracesIndex: "traces-generic-default",
+				Pipeline:    "mypipeline",
+				HTTPClientSettings: HTTPClientSettings{
+					Authentication: AuthenticationSettings{
+						User:     "open",
+						Password: "search",
+					},
+					Timeout: 2 * time.Minute,
+					Headers: map[string]string{
+						"myheader": "test",
+					},
+				},
+				Flush: FlushSettings{
+					Bytes: 10485760,
+				},
+				Retry: RetrySettings{
+					Enabled:         true,
+					MaxRequests:     5,
+					InitialInterval: 100 * time.Millisecond,
+					MaxInterval:     1 * time.Minute,
+				},
+				Mapping: MappingsSettings{
+					Mode:  "rando",
+					Dedup: true,
+					Dedot: true,
+				},
+			},
+			configValidateAssert: assert.Error,
 		},
 	}
 
@@ -119,7 +157,8 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			vv := component.ValidateConfig(cfg)
+			tt.configValidateAssert(t, vv)
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

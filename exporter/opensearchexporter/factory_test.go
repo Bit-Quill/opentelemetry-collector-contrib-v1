@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright 2023, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -58,4 +58,17 @@ func TestFactory_CreateTracesExporter_Fail(t *testing.T) {
 	params := exportertest.NewNopCreateSettings()
 	_, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	require.Error(t, err, "expected an error when creating a traces exporter")
+}
+
+func TestFactory_CreateTracesExporter(t *testing.T) {
+	factory := NewFactory()
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoints = []string{"https://opensearch.example.com:9200"}
+	})
+	params := exportertest.NewNopCreateSettings()
+	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exporter)
+
+	require.NoError(t, exporter.Shutdown(context.TODO()))
 }
