@@ -94,7 +94,7 @@ func TestTracesExporter_New(t *testing.T) {
 				t.Setenv(k, v)
 			}
 
-			exporter, err := newTracesExporter(zap.NewNop(), test.config)
+			exporter, err := newOpenSearchTracesExporter(zap.NewNop(), test.config)
 			if exporter != nil {
 				defer func() {
 					require.NoError(t, exporter.Shutdown(context.TODO()))
@@ -287,7 +287,7 @@ func TestExporter_PushDocument(t *testing.T) {
 }
 
 func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) *opensearchTracesExporter {
-	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestTracesExporterConfig(fns...)(url))
+	exporter, err := newOpenSearchTracesExporter(zaptest.NewLogger(t), withTestTracesExporterConfig(fns...)(url))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

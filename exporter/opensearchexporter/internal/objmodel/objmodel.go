@@ -77,10 +77,6 @@ type Value struct {
 	ts        time.Time
 }
 
-type DestinationSchemaTransform struct {
-	TraceID string
-}
-
 // Kind represent the internal kind of a value stored in a Document.
 type Kind uint8
 

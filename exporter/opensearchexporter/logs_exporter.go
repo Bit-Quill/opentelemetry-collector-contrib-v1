@@ -34,7 +34,7 @@ type opensearchLogsExporter struct {
 
 	client      *osClientCurrent
 	bulkIndexer osBulkIndexerCurrent
-	model       mappingModel
+	model       MappingModel
 }
 
 var retryOnStatus = []int{500, 502, 503, 504, 429}
@@ -58,7 +58,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*opensearchLogsExporter, 
 
 	maxAttempts := GetMaxAttempts(cfg)
 
-	model := NewEncodeModel(cfg)
+	model := GetEncodingModel(cfg)
 
 	indexStr := cfg.LogsIndex
 
