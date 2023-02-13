@@ -30,7 +30,7 @@ const (
 	defaultLogsIndex   = "logs-generic-default"
 	defaultTracesIndex = "traces-generic-default"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	stability = component.StabilityLevelDevelopment
 )
 
 // NewFactory creates a factory for OpenSearch exporter.
