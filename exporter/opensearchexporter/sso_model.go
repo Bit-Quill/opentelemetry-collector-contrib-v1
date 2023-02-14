@@ -59,7 +59,7 @@ type SSOSpan struct {
 	Name         string         `json:"name"`
 	ParentSpanID string         `json:"parentSpanId"`
 	Resource     map[string]any `json:"resource,omitempty"`
-	SpanId       string         `json:"spanId"`
+	SpanID       string         `json:"spanId"`
 	StartTime    time.Time      `json:"startTime"`
 	Status       struct {
 		Code    string `json:"code"`

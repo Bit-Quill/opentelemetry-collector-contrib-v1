@@ -67,7 +67,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", record.Timestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
 	document.AddTraceID("TraceId", record.TraceID())
-	document.AddSpanID("SpanId", record.SpanID())
+	document.AddSpanID("SpanID", record.SpanID())
 	document.AddInt("TraceFlags", int64(record.Flags()))
 	document.AddString("SeverityText", record.SeverityText())
 	document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
@@ -91,7 +91,7 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span) ([
 	document.AddTimestamp("@timestamp", span.StartTimestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
 	document.AddTimestamp("EndTimestamp", span.EndTimestamp())
 	document.AddTraceID("TraceId", span.TraceID())
-	document.AddSpanID("SpanId", span.SpanID())
+	document.AddSpanID("SpanID", span.SpanID())
 	document.AddSpanID("ParentSpanId", span.ParentSpanID())
 	document.AddString("Name", span.Name())
 	document.AddString("Kind", traceutil.SpanKindStr(span.Kind()))

@@ -52,9 +52,9 @@ func (s SSOTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) 
 		for j := 0; j < scopeSpans.Len(); j++ {
 			spans := scopeSpans.At(j).Spans()
 			scope := scopeSpans.At(j).Scope()
-			schemaUrl := scopeSpans.At(j).SchemaUrl()
+			schemaURL := scopeSpans.At(j).SchemaUrl()
 			for k := 0; k < spans.Len(); k++ {
-				if err := s.pushTraceRecord(ctx, resource, scope, schemaUrl, spans.At(k)); err != nil {
+				if err := s.pushTraceRecord(ctx, resource, scope, schemaURL, spans.At(k)); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -78,7 +78,7 @@ func (s SSOTracesExporter) pushTraceRecord(
 	ctx context.Context,
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
-	schemaUrl string,
+	schemaURL string,
 	span ptrace.Span,
 ) error {
 	sso := SSOSpan{}
@@ -91,7 +91,7 @@ func (s SSOTracesExporter) pushTraceRecord(
 	sso.Name = span.Name()
 	sso.ParentSpanID = span.ParentSpanID().String()
 	sso.Resource = resource.Attributes().AsRaw()
-	sso.SpanId = span.SpanID().String()
+	sso.SpanID = span.SpanID().String()
 	sso.StartTime = span.StartTimestamp().AsTime()
 	sso.Status.Code = span.Status().Code().String()
 	sso.Status.Message = span.Status().Message()
@@ -133,7 +133,7 @@ func (s SSOTracesExporter) pushTraceRecord(
 	sso.InstrumentationScope.Name = scope.Name()
 	sso.InstrumentationScope.DroppedAttributesCount = scope.DroppedAttributesCount()
 	sso.InstrumentationScope.Version = scope.Version()
-	sso.InstrumentationScope.SchemaURL = schemaUrl
+	sso.InstrumentationScope.SchemaURL = schemaURL
 	sso.InstrumentationScope.Attributes = scope.Attributes().AsRaw()
 
 	if span.Links().Len() > 0 {
