@@ -19,6 +19,7 @@ import (
 	"context"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/antchfx/jsonquery"
 	"github.com/stretchr/testify/assert"
@@ -26,6 +27,144 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
+
+func Test_span_sample(t *testing.T) {
+	testCase := &singleSpanTestCase{
+		name:          "sample span",
+		configMod:     func(config *Config) {},
+		givenResource: sampleResource(),
+		givenSpan:     sampleSpan(),
+		givenScope:    sampleScope(),
+		assertNode: func(t *testing.T, doc *jsonquery.Node) {
+			assertJsonValueEqual(t, "ip_tcp", doc, "/attributes/net.transport")
+			assertJsonValueEqual(t, float64(3), doc, "/droppedAttributesCount")
+			assertJsonValueEqual(t, float64(5), doc, "/droppedEventsCount")
+			assertJsonValueEqual(t, float64(8), doc, "/droppedLinksCount")
+			assertJsonValueEqual(t, sampleTimeB.Format(time.RFC3339Nano), doc, "/endTime")
+			assertJsonValueEqual(t, "Internal", doc, "/kind")
+			assertJsonValueEqual(t, "sample-span", doc, "/name")
+			assertJsonValueEqual(t, sampleSpanIdB.String(), doc, "/parentSpanId")
+			assertJsonValueEqual(t, sampleSpanIdA.String(), doc, "/spanId")
+			assertJsonValueEqual(t, "Error", doc, "/status/code")
+			assertJsonValueEqual(t, "sample status message", doc, "/status/message")
+			assertJsonValueEqual(t, sampleTimeA.Format(time.RFC3339Nano), doc, "/startTime")
+			assertJsonValueEqual(t, rawSampleTraceState, doc, "/traceState")
+			assertJsonValueEqual(t, sampleTraceIdA.String(), doc, "/traceId")
+		},
+	}
+
+	executeTestCase(t, testCase)
+}
+
+func Test_instrumentation_scope(t *testing.T) {
+	testCases := []*singleSpanTestCase{
+		{
+			name:          "sample scope",
+			configMod:     func(config *Config) {},
+			givenResource: sampleResource(),
+			givenSpan:     sampleSpan(),
+			givenScope:    sampleScope(),
+			assertNode: func(t *testing.T, doc *jsonquery.Node) {
+				scope := jsonquery.FindOne(doc, "/instrumentationScope")
+				assert.NotNil(t, scope)
+				assert.NotNil(t, jsonquery.FindOne(scope, "name"))
+				assert.NotNil(t, jsonquery.FindOne(scope, "version"))
+				assertJsonValueEqual(t, sampleSchemaUrl, scope, "/schemaUrl")
+				assertJsonValueEqual(t, "com.example.some-sdk", scope, "/attributes/scope.short_name")
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		executeTestCase(t, testCase)
+	}
+}
+
+func Test_links(t *testing.T) {
+	testCases := []*singleSpanTestCase{
+		{
+			name:          "no links",
+			configMod:     func(config *Config) {},
+			givenResource: sampleResource(),
+			givenSpan:     sampleSpan(),
+			givenScope:    sampleScope(),
+			assertNode: func(t *testing.T, doc *jsonquery.Node) {
+				links := jsonquery.FindOne(doc, "/links")
+				assert.Nil(t, links)
+			},
+		},
+
+		{
+			name:          "sample link",
+			configMod:     func(config *Config) {},
+			givenResource: sampleResource(),
+			givenSpan:     withSampleLink(sampleSpan()),
+			givenScope:    sampleScope(),
+			assertNode: func(t *testing.T, doc *jsonquery.Node) {
+				links := jsonquery.FindOne(doc, "/links/*")
+
+				assertJsonValueEqual(t, sampleTraceIdB.String(), links, "/traceId")
+				assertJsonValueEqual(t, sampleSpanIdB.String(), links, "/spanId")
+				assertJsonValueEqual(t, float64(3), links, "droppedAttributesCount")
+				assertJsonValueEqual(t, rawSampleTraceState, links, "traceState")
+				assertJsonValueEqual(t, "remote-link", links, "/attributes/link_attr")
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		executeTestCase(t, testCase)
+	}
+}
+
+// Test_events verifies that events are mapped as expected.
+func Test_events(t *testing.T) {
+	testCases := []*singleSpanTestCase{
+		{
+			name:          "no events",
+			configMod:     func(config *Config) {},
+			givenResource: sampleResource(),
+			givenScope:    sampleScope(),
+			givenSpan:     sampleSpan(),
+			assertNode: func(t *testing.T, doc *jsonquery.Node) {
+				eventsNode := jsonquery.FindOne(doc, "/events")
+				assert.Nil(t, eventsNode)
+			},
+		},
+		{
+			name:          "event with timestamp",
+			configMod:     func(config *Config) {},
+			givenResource: sampleResource(),
+			givenScope:    sampleScope(),
+			givenSpan:     withEventWithTimestamp(sampleSpan()),
+			assertNode: func(t *testing.T, doc *jsonquery.Node) {
+				eventsNode := jsonquery.FindOne(doc, "/events/*")
+				assertJsonValueEqual(t, "cloudevent", eventsNode, "name")
+				// JSON Go encodes all numbers as floats, see https://pkg.go.dev/encoding/json#Marshal
+				assertJsonValueEqual(t, float64(42), eventsNode, "droppedAttributesCount")
+				assert.NotNil(t, eventsNode.SelectElement("@timestamp"))
+				assert.Nil(t, eventsNode.SelectElement("observedTimestamp"))
+			},
+		},
+		{
+			name:          "event, no timestamp, observedTimestamp added",
+			configMod:     func(config *Config) {},
+			givenResource: sampleResource(),
+			givenScope:    sampleScope(),
+			givenSpan:     withEventNoTimestamp(sampleSpan()),
+			assertNode: func(t *testing.T, doc *jsonquery.Node) {
+				eventsNode := jsonquery.FindOne(doc, "/events/*")
+				assertJsonValueEqual(t, "exception", eventsNode, "name")
+				assert.NotNil(t, eventsNode.SelectElement("observedTimestamp"))
+				assert.Nil(t, eventsNode.SelectElement("@timestamp"))
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		executeTestCase(t, testCase)
+	}
+}
 
 // Test_attributes_data_stream verifies that Dataset and Namespace configuration options are
 // recorded in the `.attributes.data_stream` object of an exported span
@@ -37,82 +176,60 @@ func Test_attributes_data_stream(t *testing.T) {
 	testCases := []struct {
 		name       string
 		assertNode func(*testing.T, *jsonquery.Node)
-		configFunc func(*Config)
+		configMod  func(*Config)
 	}{
 		{
-			name:       "default routing",
-			configFunc: func(config *Config) {},
+			name:      "default routing",
+			configMod: func(config *Config) {},
 			assertNode: func(t *testing.T, node *jsonquery.Node) {
-				// no attributes property expected
-				luckyNode := jsonquery.FindOne(node, "/attributes")
+				// no data_stream attribute expected
+				luckyNode := jsonquery.FindOne(node, "/attributes/data_stream")
 				assert.Nil(t, luckyNode)
 			},
 		},
 		{
-			name:       "datatset is ngnix",
-			configFunc: func(config *Config) { config.Dataset = "ngnix" },
+			name:      "datatset is ngnix",
+			configMod: func(config *Config) { config.Dataset = "ngnix" },
 			assertNode: func(t *testing.T, doc *jsonquery.Node) {
-				// no attributes property expected
-				luckyNode := jsonquery.FindOne(doc, "/attributes/data_stream/dataset")
-				assert.NotNil(t, luckyNode)
-				assert.Equal(t, "ngnix", luckyNode.Value())
+				assertJsonValueEqual(t, "ngnix", doc, "/attributes/data_stream/dataset")
 				validateDataStreamType(t, doc)
 			},
 		},
 		{
-			name:       "namespace is exceptions",
-			configFunc: func(config *Config) { config.Namespace = "exceptions" },
+			name:      "namespace is exceptions",
+			configMod: func(config *Config) { config.Namespace = "exceptions" },
 			assertNode: func(t *testing.T, doc *jsonquery.Node) {
 				// no attributes property expected
-				luckyNode := jsonquery.FindOne(doc, "/attributes/data_stream/namespace")
-				assert.NotNil(t, luckyNode)
-				assert.Equal(t, "exceptions", luckyNode.Value())
+				assertJsonValueEqual(t, "exceptions", doc, "/attributes/data_stream/namespace")
 				validateDataStreamType(t, doc)
 			},
 		},
 		{
 			name: "dataset is mysql, namespace is warnings",
-			configFunc: func(config *Config) {
+			configMod: func(config *Config) {
 				config.Namespace = "warnings"
 				config.Dataset = "mysql"
 			},
 			assertNode: func(t *testing.T, doc *jsonquery.Node) {
 				// no attributes property expected
-				namespaceNode := jsonquery.FindOne(doc, "/attributes/data_stream/namespace")
-				assert.NotNil(t, namespaceNode)
-				assert.Equal(t, "warnings", namespaceNode.Value())
+				assertJsonValueEqual(t, "warnings", doc, "/attributes/data_stream/namespace")
+				assertJsonValueEqual(t, "mysql", doc, "/attributes/data_stream/dataset")
 
-				datasetNode := jsonquery.FindOne(doc, "/attributes/data_stream/dataset")
-				assert.NotNil(t, datasetNode)
-				assert.Equal(t, "mysql", datasetNode.Value())
 				validateDataStreamType(t, doc)
 			},
 		},
 	}
-	logger := zaptest.NewLogger(t)
 
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			rec := newBulkRecorder()
-			server := newRecTestServer(t, rec)
-			exporter := newSSOTestTracesExporter(t, logger, server.URL, testCase.configFunc)
-			err := exporter.pushTraceRecord(context.TODO(), sampleResource(), sampleSpan())
-			require.NoError(t, err)
-			rec.WaitItems(1)
-
-			// Sanity test
-			require.Equal(t, 1, rec.NumItems())
-
-			// Sanity test
-			require.Len(t, rec.Requests()[0], 1)
-
-			doc, err := jsonquery.Parse(bytes.NewReader(rec.Requests()[0][0].Document))
-
-			// Sanity test
-			require.NoError(t, err)
-
-			testCase.assertNode(t, doc)
-		})
+	for _, sampleTestCase := range testCases {
+		testCase := &singleSpanTestCase{
+			name:          sampleTestCase.name,
+			configMod:     sampleTestCase.configMod,
+			givenResource: sampleResource(),
+			givenScope:    sampleScope(),
+			givenSpan:     sampleSpan(),
+			assertNode:    sampleTestCase.assertNode,
+		}
+		executeTestCase(t, testCase)
 	}
 
 }
@@ -122,44 +239,44 @@ func Test_sso_routing(t *testing.T) {
 	testCases := []struct {
 		name          string
 		expectedIndex string
-		configFunc    func(config *Config)
+		configMod     func(config *Config)
 	}{
 		{
 			name:          "default routing",
 			expectedIndex: "sso_traces-default-namespace",
-			configFunc:    func(config *Config) {},
+			configMod:     func(config *Config) {},
 		},
 		{
 			name: "dataset is webapp",
-			configFunc: func(config *Config) {
+			configMod: func(config *Config) {
 				config.Dataset = "webapp"
 			},
 			expectedIndex: "sso_traces-webapp-namespace",
 		},
 		{
 			name: "namespace is exceptions",
-			configFunc: func(config *Config) {
+			configMod: func(config *Config) {
 				config.Namespace = "exceptions"
 			},
 			expectedIndex: "sso_traces-default-exceptions",
 		},
 		{
 			name: "namespace is warnings, dataset is mysql",
-			configFunc: func(config *Config) {
+			configMod: func(config *Config) {
 				config.Namespace = "warnings"
 				config.Dataset = "mysql"
 			},
 			expectedIndex: "sso_traces-mysql-warnings",
 		},
 	}
-	logger := zaptest.NewLogger(t)
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
+			logger := zaptest.NewLogger(t)
 			rec := newBulkRecorder()
 			server := newRecTestServer(t, rec)
-			exporter := newSSOTestTracesExporter(t, logger, server.URL, testCase.configFunc)
-			err := exporter.pushTraceRecord(context.TODO(), sampleResource(), sampleSpan())
+			exporter := newSSOTestTracesExporter(t, logger, server.URL, testCase.configMod)
+			err := exporter.pushTraceRecord(context.TODO(), *sampleResource(), *sampleScope(), sampleSchemaUrl, *sampleSpan())
 			require.NoError(t, err)
 			rec.WaitItems(1)
 
