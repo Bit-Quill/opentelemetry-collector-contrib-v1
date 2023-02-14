@@ -18,40 +18,38 @@ import (
 	"time"
 )
 
-type Sso struct {
-	Attributes struct {
-		DataStream struct {
-			Dataset   string `json:"dataset"`
-			Namespace string `json:"namespace"`
-			Type      string `json:"type"`
-		} `json:"data_stream"`
-	} `json:"attributes"`
-	DroppedAttributesCount uint32    `json:"droppedAttributesCount"`
-	DroppedEventsCount     uint32    `json:"droppedEventsCount"`
-	DroppedLinksCount      uint32    `json:"droppedLinksCount"`
-	EndTime                time.Time `json:"endTime"`
+type DataStream struct {
+	Dataset   string `json:"dataset,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
+	Type      string `json:"type,omitempty"`
+}
+
+type SSOSpan struct {
+	Attributes             map[string]any `json:"attributes,omitempty"`
+	DroppedAttributesCount uint32         `json:"droppedAttributesCount"`
+	DroppedEventsCount     uint32         `json:"droppedEventsCount"`
+	DroppedLinksCount      uint32         `json:"droppedLinksCount"`
+	EndTime                time.Time      `json:"endTime"`
 	Events                 []struct {
 		Name              string    `json:"name"`
 		Timestamp         time.Time `json:"@timestamp"`
 		ObservedTimestamp time.Time `json:"observedTimestamp"`
-	} `json:"events"`
+	} `json:"events,omitempty"`
 	InstrumentationScope struct {
 		Name                   string `json:"name"`
 		Version                string `json:"version"`
 		DroppedAttributesCount uint32 `json:"droppedAttributesCount"`
 		SchemaURL              string `json:"schemaUrl"`
-	} `json:"instrumentationScope"`
+	} `json:"instrumentationScope,omitempty"`
 	Kind  string `json:"kind"`
 	Links struct {
 		SpanID     string `json:"spanId"`
 		TraceID    string `json:"traceId"`
 		TraceState string `json:"traceState"`
 	} `json:"links"`
-	Name         string `json:"name"`
-	ParentSpanID string `json:"parentSpanId"`
-	Resource     struct {
-		Type string `json:"type"`
-	} `json:"resource"`
+	Name         string         `json:"name"`
+	ParentSpanID string         `json:"parentSpanId"`
+	Resource     map[string]any `json:"resource,omitempty"`
 
 	StartTime time.Time `json:"startTime"`
 	Status    struct {

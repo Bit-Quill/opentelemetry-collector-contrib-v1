@@ -53,6 +53,8 @@ type Config struct {
 	Retry              RetrySettings    `mapstructure:"retry"`
 	Flush              FlushSettings    `mapstructure:"flush"`
 	Mapping            MappingsSettings `mapstructure:"mapping"`
+	Namespace          string           `mapstructure:"namespace"`
+	Dataset            string           `mapstructure:"dataset"`
 }
 
 type HTTPClientSettings struct {

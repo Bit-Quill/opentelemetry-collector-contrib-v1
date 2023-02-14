@@ -17,6 +17,7 @@ package opensearchexporter
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -31,6 +32,8 @@ type SSOTracesExporter struct {
 
 	client      *osClientCurrent
 	bulkIndexer osBulkIndexerCurrent
+	Namespace   string
+	Dataset     string
 }
 
 func (s SSOTracesExporter) Shutdown(ctx context.Context) error {
@@ -61,9 +64,15 @@ func (s SSOTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) 
 	return multierr.Combine(errs...)
 }
 
-func (s SSOTracesExporter) pushTraceRecord(ctx context.Context, _ pcommon.Resource, span ptrace.Span) error {
-	index := "default-index"
-	sso := Sso{}
+func defaultIfEmpty(value string, def string) string {
+	if value == "" {
+		return def
+	}
+	return value
+}
+
+func (s SSOTracesExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span) error {
+	sso := SSOSpan{}
 	sso.Name = span.Name()
 	sso.TraceID = span.TraceID().String()
 	sso.TraceState = span.TraceState().AsRaw()
@@ -76,12 +85,30 @@ func (s SSOTracesExporter) pushTraceRecord(ctx context.Context, _ pcommon.Resour
 	sso.DroppedLinksCount = span.DroppedLinksCount()
 	sso.Status.Code = span.Status().Code().String()
 	sso.Status.Message = span.Status().Message()
+	sso.Resource = resource.Attributes().AsRaw()
+	sso.Attributes = span.Attributes().AsRaw()
+
+	dataStream := DataStream{}
+	if s.Dataset != "" {
+		dataStream.Dataset = s.Dataset
+	}
+
+	if s.Namespace != "" {
+		dataStream.Namespace = s.Namespace
+	}
+
+	if dataStream != (DataStream{}) {
+		dataStream.Type = "span"
+		sso.Attributes["data_stream"] = dataStream
+	}
 	payload, _ := json.Marshal(sso)
+
+	index := strings.Join([]string{"sso_traces", defaultIfEmpty(s.Dataset, "default"), defaultIfEmpty(s.Namespace, "namespace")}, "-")
 	return pushDocuments(ctx, s.logger, index, payload, s.bulkIndexer, s.maxAttempts)
 
 }
 
-func newSSOTracesExporter(logger *zap.Logger, cfg *Config) (tracesExporter, error) {
+func newSSOTracesExporter(logger *zap.Logger, cfg *Config) (*SSOTracesExporter, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -102,5 +129,7 @@ func newSSOTracesExporter(logger *zap.Logger, cfg *Config) (tracesExporter, erro
 		maxAttempts: maxAttempts,
 		client:      client,
 		bulkIndexer: bulkIndexer,
+		Namespace:   cfg.Namespace,
+		Dataset:     cfg.Dataset,
 	}, nil
 }

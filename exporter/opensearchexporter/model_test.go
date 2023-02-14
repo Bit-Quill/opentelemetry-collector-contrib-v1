@@ -37,7 +37,7 @@ func Test_encodeModel_encodeSpan(t *testing.T) {
 		// TODO: Add test cases.
 		{
 			name:    "simple",
-			args:    args{resource: newResource(), span: sampleSpan()},
+			args:    args{resource: sampleResource(), span: sampleSpan()},
 			want:    nil,
 			wantErr: assert.NoError,
 		},
@@ -68,9 +68,12 @@ func Test_encodeModel_encodeSpan(t *testing.T) {
 	}
 }
 
-func newResource() pcommon.Resource {
+func sampleResource() pcommon.Resource {
 	r := pcommon.NewResource()
-	r.Attributes().PutStr("test", "rest")
+	// An attribute of each supported type
+	r.Attributes().PutStr("service.name", "opensearchexporter")
+	r.Attributes().PutBool("browser.mobile", false)
+	r.Attributes().PutInt("process.pid", 300)
 	return r
 }
 
@@ -78,5 +81,17 @@ func sampleSpan() ptrace.Span {
 	sp := ptrace.NewSpan()
 
 	sp.SetSpanID(pcommon.SpanID{1, 0, 0, 0})
+	sp.SetTraceID(pcommon.TraceID{2, 0, 0, 0})
+
 	return sp
+}
+
+func withSampleAttributes(span *ptrace.Span) {
+	// net.transport is one of conventionally used attributes. See https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/span-general/#network-transport-attributes
+	span.Attributes().PutStr("net.transport", "ip_tcp")
+}
+
+func withSampleTraceState(span *ptrace.Span) {
+	// TraceState is defined by a W3C spec. Sample value take from https://www.w3.org/TR/trace-context/#examples-of-tracestate-http-headers
+	span.TraceState().FromRaw("rojo=00f067aa0ba902b7,congo=t61rcWkgMzE")
 }
