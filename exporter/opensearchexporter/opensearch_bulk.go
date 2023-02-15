@@ -136,13 +136,11 @@ func newTransport(config *Config, tlsCfg *tls.Config) *http.Transport {
 }
 
 func newBulkIndexer(logger *zap.Logger, client *opensearch.Client, config *Config) (osBulkIndexerCurrent, error) {
-	// TODO: add debug logger
 	return opensearchutil.NewBulkIndexer(opensearchutil.BulkIndexerConfig{
 		NumWorkers:    config.NumWorkers,
 		FlushBytes:    config.Flush.Bytes,
 		FlushInterval: config.Flush.Interval,
 		Client:        client,
-		Pipeline:      config.Pipeline,
 		Timeout:       config.Timeout,
 
 		OnError: func(_ context.Context, err error) {

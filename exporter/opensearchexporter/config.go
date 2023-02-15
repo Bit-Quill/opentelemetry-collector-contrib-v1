@@ -39,15 +39,9 @@ type Config struct {
 	// NumWorkers configures the number of workers publishing bulk requests.
 	NumWorkers int `mapstructure:"num_workers"`
 
-	// This setting is required when logging pipelines used.
 	LogsIndex string `mapstructure:"logs_index"`
 
-	// This setting is required when traces pipelines used.
 	TracesIndex string `mapstructure:"traces_index"`
-
-	// Pipeline ingest node pipeline name that should be used to process the
-	// events.
-	Pipeline string `mapstructure:"pipeline"`
 
 	HTTPClientSettings `mapstructure:",squash"`
 	Retry              RetrySettings    `mapstructure:"retry"`

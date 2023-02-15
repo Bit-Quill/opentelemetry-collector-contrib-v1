@@ -1,10 +1,9 @@
 # OpenSearch Exporter
 
-| Status                   |             |
-| ------------------------ |-------------|
-| Stability                | [beta]      |
-| Supported pipeline types | traces      |
-| Distributions            | [contrib]   |
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [dev]     |
+| Distributions            | [contrib] |
 
 This exporter supports sending OpenTelemetry signals to [OpenSearch](https://www.opensearch.org).
 
@@ -80,5 +79,5 @@ service:
       exporters: [opensearch/trace]
       processors: [batch]
 ```
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
